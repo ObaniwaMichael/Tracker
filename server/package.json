@@ -1,0 +1,22 @@
+{
+  "name": "pulsetrack-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PulseTrack Express + WebSocket API with Supabase persistence",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.75.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

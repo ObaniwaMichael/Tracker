@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Caller ID</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #151822;
+    --panel-2: #1c2030;
+    --border: #262b3a;
+    --text: #e8eaf0;
+    --muted: #8b90a3;
+    --accent: #5b8cff;
+    --accent-2: #7ee0c0;
+    --danger: #ff6b6b;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f6f9;
+      --panel: #ffffff;
+      --panel-2: #f0f1f6;
+      --border: #e1e3ec;
+      --text: #171923;
+      --muted: #6b7280;
+      --accent: #3b5fe0;
+      --accent-2: #0ea383;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 28px 20px 8px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+  }
+  header p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status-dot.ok { background: var(--accent-2); }
+  .status-dot.err { background: var(--danger); }
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 720px) {
+    main { grid-template-columns: 1fr 1fr; }
+    .span-2 { grid-column: 1 / -1; }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+  }
+  .card .hint {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: 10px 0 4px;
+  }
+  input, select {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-family: ui-monospace, monospace;
+    font-size: 0.82rem;
+    resize: vertical;
+  }
+  button {
+    margin-top: 14px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.08); }
+  button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  button.danger { background: var(--danger); }
+
+  .result {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: none;
+  }
+  .result.show { display: block; }
+  .result.err { border-color: var(--danger); color: var(--danger); }
+
+  .lookup-card .name { font-size: 1.3rem; font-weight: 700; margin: 2px 0 2px; }
+  .lookup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .lookup-grid div { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  .lookup-grid span.k { display: block; font-size: 0.72rem; color: var(--muted); }
+  .lookup-grid span.v { font-size: 0.92rem; font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+  .badge.spam { background: rgba(255,107,107,0.15); color: var(--danger); }
+  .badge.clean { background: rgba(126,224,192,0.15); color: var(--accent-2); }
+
+  .search-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--border); margin-top: 8px; cursor: pointer; text-align: left; width: 100%; color: inherit; font: inherit; }
+  .search-row b { font-size: 0.9rem; }
+  .search-row small { color: var(--muted); display: block; font-size: 0.74rem; }
+  .history { margin-top: 10px; }
+  .history li { margin: 4px 0; color: var(--muted); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Caller ID</h1>
+  <p>Crowdsourced name lookup, numbering-plan location after each search, spam reporting</p>
+  <div class="status-pill"><span id="statusDot" class="status-dot"></span><span id="statusText">checking API…</span></div>
+</header>
+
+<main>
+
+  <!-- Register -->
+  <section class="card">
+    <h2>Register a user</h2>
+    <p class="hint">Needed before uploading contacts or reporting spam.</p>
+    <label>Phone number</label>
+    <input id="reg-phone" placeholder="08012345678 or +2348012345678" />
+    <label>Display name</label>
+    <input id="reg-name" placeholder="Ada" />
+    <button onclick="registerUser()">Register</button>
+    <div id="reg-result" class="result"></div>
+  </section>
+
+  <!-- Lookup -->
+  <section class="card">
+    <h2>Look up a number</h2>
+    <p class="hint">Shows the crowdsourced name, spam reports, and stored numbering-plan region (not live GPS).</p>
+    <label>Phone number</label>
+    <input id="lookup-phone" placeholder="08055512345" />
+    <button onclick="lookupNumber()">Look up</button>
+    <div id="lookup-result" class="result lookup-card"></div>
+  </section>
+
+  <!-- Upload contacts -->
+  <section class="card span-2">
+    <h2>Upload contacts</h2>
+    <p class="hint">Simulates a user syncing their phone contacts — this is what builds the name↔number graph. One per line: <code>Name, Number</code></p>
+    <label>Owner user ID</label>
+    <input id="upload-owner" placeholder="1" />
+    <label>Contacts</label>
+    <textarea id="upload-contacts" placeholder="Pizza Delivery, 08055512345&#10;Mum, 08099998888"></textarea>
+    <button onclick="uploadContacts()">Upload</button>
+    <div id="upload-result" class="result"></div>
+  </section>
+
+  <!-- Search -->
+  <section class="card">
+    <h2>Search by name</h2>
+    <p class="hint">Each match stores region/carrier as that number’s latest location. Click a row to look it up.</p>
+    <label>Name contains…</label>
+    <input id="search-name" placeholder="pizza" />
+    <button onclick="searchByName()">Search</button>
+    <div id="search-result" class="result"></div>
+  </section>
+
+  <!-- Stored location -->
+  <section class="card">
+    <h2>Latest stored location</h2>
+    <p class="hint">Only numbers that have already been looked up or found in a name search.</p>
+    <label>Phone number</label>
+    <input id="loc-phone" placeholder="08055512345" />
+    <button class="secondary" onclick="getStoredLocation()">Get latest</button>
+    <div id="loc-result" class="result lookup-card"></div>
+  </section>
+
+  <!-- Spam report -->
+  <section class="card">
+    <h2>Report spam</h2>
+    <label>Phone number</label>
+    <input id="spam-phone" placeholder="08055512345" />
+    <label>Reporter user ID</label>
+    <input id="spam-reporter" placeholder="2" />
+    <label>Category</label>
+    <select id="spam-category">
+      <option value="spam">Spam</option>
+      <option value="scam">Scam</option>
+      <option value="telemarketer">Telemarketer</option>
+      <option value="fraud">Fraud</option>
+    </select>
+    <button class="danger" onclick="reportSpam()">Report</button>
+    <div id="spam-result" class="result"></div>
+  </section>
+
+</main>
+
+<script>
+const API = window.location.origin;
+
+function showResult(id, data, isError = false) {
+  const el = document.getElementById(id);
+  el.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  el.classList.add("show");
+  el.classList.toggle("err", isError);
+}
+
+async function callApi(path, options = {}) {
+  const res = await fetch(API + path, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw body.detail || body;
+  return body;
+}
+
+async function checkHealth() {
+  const dot = document.getElementById("statusDot");
+  const text = document.getElementById("statusText");
+  try {
+    await fetch(API + "/docs");
+    dot.classList.add("ok");
+    text.textContent = "API connected";
+  } catch {
+    dot.classList.add("err");
+    text.textContent = "API unreachable — is the server running?";
+  }
+}
+checkHealth();
+
+async function registerUser() {
+  const phone_number = document.getElementById("reg-phone").value.trim();
+  const display_name = document.getElementById("reg-name").value.trim();
+  try {
+    const data = await callApi("/users/register", {
+      method: "POST",
+      body: JSON.stringify({ phone_number, display_name }),
+    });
+    showResult("reg-result", `Registered! Your user ID is ${data.id} — use it for uploads/reports.\n\n` + JSON.stringify(data, null, 2));
+  } catch (e) {
+    showResult("reg-result", e, true);
+  }
+}
+
+async function uploadContacts() {
+  const owner_id = parseInt(document.getElementById("upload-owner").value, 10);
+  const lines = document.getElementById("upload-contacts").value.split("\n").map(l => l.trim()).filter(Boolean);
+  const contacts = lines.map(line => {
+    const [saved_name, phone_number] = line.split(",").map(s => s.trim());
+    return { saved_name, phone_number };
+  });
+  try {
+    const data = await callApi("/contacts/upload", {
+      method: "POST",
+      body: JSON.stringify({ owner_id, contacts }),
+    });
+    showResult("upload-result", data);
+  } catch (e) {
+    showResult("upload-result", e, true);
+  }
+}
+
+async function lookupNumber() {
+  const phone = document.getElementById("lookup-phone").value.trim();
+  const el = document.getElementById("lookup-result");
+  try {
+    const data = await callApi(`/lookup/${encodeURIComponent(phone)}`);
+    const spamBadge = data.is_likely_spam
+      ? `<span class="badge spam">⚠ Likely spam (${data.spam_report_count} reports)</span>`
+      : `<span class="badge clean">No spam reports</span>`;
+    const loc = data.latest_location || {};
+    const prev = data.previous_location;
+    el.innerHTML = `
+      <div class="name">${data.likely_name || "Unknown caller"}</div>
+      <div style="color:var(--muted); font-size:0.82rem;">${data.e164}</div>
+      <div style="margin-top:8px;">${spamBadge}</div>
+      <div class="lookup-grid">
+        <div><span class="k">Region</span><span class="v">${data.region_hint || "—"}</span></div>
+        <div><span class="k">Carrier</span><span class="v">${data.carrier_hint}</span></div>
+        <div><span class="k">Line type</span><span class="v">${data.line_type}</span></div>
+        <div><span class="k">Name agreement</span><span class="v">${data.name_agreement_count}/${data.total_contact_saves} saves</span></div>
+        <div><span class="k">Stored at</span><span class="v">${formatWhen(loc.looked_up_at)}</span></div>
+        <div><span class="k">Previous region</span><span class="v">${prev ? (prev.region_hint || "—") : "First search"}</span></div>
+      </div>`;
+    el.classList.add("show");
+    el.classList.remove("err");
+  } catch (e) {
+    showResult("lookup-result", e, true);
+  }
+}
+
+async function searchByName() {
+  const name = document.getElementById("search-name").value.trim();
+  const el = document.getElementById("search-result");
+  try {
+    const data = await callApi(`/search?name=${encodeURIComponent(name)}`);
+    if (!data.length) { showResult("search-result", "No matches."); return; }
+    el.innerHTML = data.map(r => `
+      <button type="button" class="search-row" onclick="openLookup(${JSON.stringify(r.phone_number)})">
+        <div>
+          <b>${r.likely_name}</b>
+          <small>${r.phone_number}</small>
+          <small>${r.region_hint || "Unknown region"} · ${r.carrier_hint || "Unknown carrier"}</small>
+        </div>
+        <small>${r.name_agreement_count} agree</small>
+      </button>`).join("");
+    el.classList.add("show");
+    el.classList.remove("err");
+  } catch (e) {
+    showResult("search-result", e, true);
+  }
+}
+
+function formatWhen(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
+function openLookup(phone) {
+  document.getElementById("lookup-phone").value = phone;
+  document.getElementById("loc-phone").value = phone;
+  lookupNumber();
+}
+
+async function getStoredLocation() {
+  const phone = document.getElementById("loc-phone").value.trim();
+  const el = document.getElementById("loc-result");
+  try {
+    const data = await callApi(`/locations/${encodeURIComponent(phone)}`);
+    const loc = data.latest_location || {};
+    const history = (data.history || []).map(h =>
+      `<li>${formatWhen(h.looked_up_at)} — ${h.region_hint || "—"} · ${h.carrier_hint || "—"} (${h.source})</li>`
+    ).join("");
+    el.innerHTML = `
+      <div class="name">${loc.region_hint || "Unknown region"}</div>
+      <div style="color:var(--muted); font-size:0.82rem;">${data.e164}</div>
+      <div class="lookup-grid">
+        <div><span class="k">Carrier</span><span class="v">${loc.carrier_hint || "—"}</span></div>
+        <div><span class="k">Line type</span><span class="v">${loc.line_type || "—"}</span></div>
+        <div><span class="k">Last searched</span><span class="v">${formatWhen(loc.looked_up_at)}</span></div>
+        <div><span class="k">Source</span><span class="v">${loc.source || "—"}</span></div>
+      </div>
+      <ul class="history">${history}</ul>`;
+    el.classList.add("show");
+    el.classList.remove("err");
+  } catch (e) {
+    showResult("loc-result", e, true);
+  }
+}
+
+async function reportSpam() {
+  const phone_number = document.getElementById("spam-phone").value.trim();
+  const reporter_id = parseInt(document.getElementById("spam-reporter").value, 10);
+  const category = document.getElementById("spam-category").value;
+  try {
+    const data = await callApi("/spam/report", {
+      method: "POST",
+      body: JSON.stringify({ phone_number, reporter_id, category }),
+    });
+    showResult("spam-result", data);
+  } catch (e) {
+    showResult("spam-result", e, true);
+  }
+}
+</script>
+</body>
+</html>

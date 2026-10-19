@@ -1,0 +1,45 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-ink: #0b1220;
+  --color-panel: #111827;
+  --color-panel-2: #1a2332;
+  --color-line: #2a3548;
+  --color-muted: #94a3b8;
+  --color-signal: #14b8a6;
+  --color-signal-soft: #5eead4;
+  --color-warn: #f59e0b;
+  --color-danger: #f43f5e;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-ink);
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth Leaflet marker glide between mock WS ticks */
+.pulse-marker-wrap {
+  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pulse-marker-wrap .leaflet-marker-icon {
+  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #0f172a;
+  z-index: 0;
+}
