@@ -256,8 +256,16 @@ wss.on('connection', (socket, req) => {
   })
 })
 
-server.listen(PORT, () => {
-  console.log(`[pulsetrack] API + WS listening on http://localhost:${PORT}`)
-  console.log(`[pulsetrack] WebSocket path ws://localhost:${PORT}/ws?tripId=...&role=driver|dispatcher`)
-  console.log(`[pulsetrack] CORS origin: ${CORS_ORIGIN}`)
-})
+// Vercel Fluid + WebSockets need the HTTP server as the default export.
+// Locally we still bind a port ourselves.
+export default server
+
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`[pulsetrack] API + WS listening on http://localhost:${PORT}`)
+    console.log(
+      `[pulsetrack] WebSocket path ws://localhost:${PORT}/ws?tripId=...&role=driver|dispatcher`,
+    )
+    console.log(`[pulsetrack] CORS origin: ${CORS_ORIGIN}`)
+  })
+}
